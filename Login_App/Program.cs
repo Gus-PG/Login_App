@@ -4,6 +4,10 @@ using Login_App.Models;
 using Login_App.Servicios.Contrato;
 using Login_App.Servicios.Implementacion;
 
+// Referencia para trabajar con las cookies.
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -19,6 +23,26 @@ builder.Services.AddDbContext<BdloginContext>(options =>
 
 // Así podremos usar este servicio dentro de cualquier controlador que creemos.
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Inicio/IniciarSesion";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
+    });
+
+// Forma para deshabilitar el caché.
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(
+        new ResponseCacheAttribute
+        {
+            NoStore = true,
+            Location = ResponseCacheLocation.None,
+        }
+     );
+});
+
 // -----
 
 var app = builder.Build();
@@ -36,10 +60,16 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// -----
+app.UseAuthentication();
+
+// -----
+
 app.UseAuthorization();
 
+// Le indicamos el Controller y Acción con el que iniciaremos la app.
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Inicio}/{action=IniciarSesion}/{id?}");
 
 app.Run();
